@@ -1,7 +1,6 @@
 'use client';
 
 import qs from 'query-string';
-import dynamic from 'next/dynamic';
 import { useCallback, useMemo, useState } from 'react';
 import { Range } from 'react-date-range';
 import { formatISO } from 'date-fns';

@@ -7,7 +7,7 @@ import 'react-date-range/dist/theme/default.css';
 
 interface DatePickerProps {
   value: Range;
-  onChange: (value: RangeKeyDict) => void;
+  onChange?: (_: RangeKeyDict) => void;
   disabledDates?: Date[];
 }
 

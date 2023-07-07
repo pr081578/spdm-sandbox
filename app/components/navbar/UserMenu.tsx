@@ -32,12 +32,6 @@ const UserMenu = ({ currentUser }: UserMenuProps) => {
     setIsOpen((value) => !value);
   }, []);
 
-  const onRent = useCallback(() => {
-    if (!currentUser) {
-      return loginModal.onOpen();
-    }
-  }, [loginModal, currentUser]);
-
   return (
     <div className="relative">
       <div className="flex flex-row items-center gap-3">
@@ -102,6 +96,7 @@ const UserMenu = ({ currentUser }: UserMenuProps) => {
               <>
                 {menuCollection.map((item) => (
                   <MenuItem
+                    key={item.label}
                     label={item.label}
                     onClick={() => router.push(`${item.route}`)}
                   />

@@ -11,6 +11,7 @@ const NavbarItem = () => {
     <>
       {menuItemms.map((item) => (
         <MenuItem
+          key={item.label}
           label={item.label}
           onClick={() => router.push(`${item.route}`)}
         />

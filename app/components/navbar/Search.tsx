@@ -11,7 +11,6 @@ const Search = () => {
   const searchModal = useSearchModal();
   const params = useSearchParams();
 
-  const locationValue = params?.get('locationValue');
   const startDate = params?.get('startDate');
   const endDate = params?.get('endDate');
   const guestCount = params?.get('guestCount');
