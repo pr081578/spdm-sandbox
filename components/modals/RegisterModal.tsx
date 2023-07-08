@@ -6,7 +6,10 @@ import { signIn } from 'next-auth/react';
 import { FcGoogle } from 'react-icons/fc';
 import { useCallback, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { FieldValues, SubmitHandler, useForm } from 'react-hook-form';
+
+import { FieldValues } from 'react-hook-form/dist/types/fields';
+import { useForm } from 'react-hook-form/dist/useForm';
+import { SubmitHandler } from 'react-hook-form/dist/types/form';
 
 import useLoginModal from '@hooks/useLoginModal';
 import useRegisterModal from '@hooks/useRegisterModal';
