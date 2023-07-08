@@ -11,89 +11,137 @@ datasource db {
 }
 
 model User {
-  id              String @id @default(auto()) @map("_id") @db.ObjectId
-  name            String?
-  email           String?   @unique
-  emailVerified   DateTime?
-  image           String?
-  hashedPassword  String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
- 
+  id             String    @id @default(uuid()) @map("_id") @db.ObjectId
+  name           String?
+  email          String?   @unique
+  emailVerified  DateTime?
+  role           Role      @default(BASIC)
+  image          String?
+  hashedPassword String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  accounts Account[]
-  vehicles Vehicle[]
+  accounts     Account[]
+  vehicles     Vehicle[]
   reservations Reservation[]
 }
 
 model Account {
-  id                 String @id @default(auto()) @map("_id") @db.ObjectId
-  userId             String @db.ObjectId 
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?  
-  access_token       String?  
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String? 
-  session_state      String?
+  id                String  @id @default(uuid()) @map("_id") @db.ObjectId
+  userId            String  @db.ObjectId
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@unique([provider, providerAccountId])
 }
 
 model Subscription {
-  id                String @id @default(auto()) @map("_id") @db.ObjectId
-  startDate         DateTime
-  endDate           DateTime
-  totalPrice        Int
-  createdAt         DateTime @default(now())
+  id         String   @id @default(uuid()) @map("_id") @db.ObjectId
+  startDate  DateTime
+  endDate    DateTime
+  totalPrice Int
+  createdAt  DateTime @default(now())
 
   vehicles Vehicle[]
 }
 
+model Location {
+  id          String @id @default(uuid()) @map("_id") @db.ObjectId
+  street1Name String
+  street2Name String
+  city        String
+  state       String
+  zipcode     String
+
+  reservations Reservation[]
+}
+
 model CarSharingPlatform {
-  id                String @id @default(auto()) @map("_id") @db.ObjectId
-  startDate         DateTime
-  endDate           DateTime
-  createdAt         DateTime @default(now())
+  id        String   @id @default(uuid()) @map("_id") @db.ObjectId
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
 
   reservations Reservation[]
 }
 
 model Vehicle {
-  id                String @id @default(auto()) @map("_id") @db.ObjectId
-  make              String
-  model             String
-  year              Int
-  vin               String
-  state_registation String
-  state_license_plate    String
-  imageSrc          String
-  createdAt         DateTime @default(now())
-  category          String
-  userId            String @db.ObjectId
-  subscriptionId    String @db.ObjectId
-  price             Int
+  id                  String   @id @default(uuid()) @map("_id") @db.ObjectId
+  make                String
+  model               String
+  year                Int
+  vin                 String
+  state_registation   String
+  state_license_plate String
+  imageSrc            String
+  createdAt           DateTime @default(now())
+  category            String
+  userId              String   @db.ObjectId
+  subscriptionId      String   @db.ObjectId
+  isActive            Boolean
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  owner        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
   reservations Reservation[]
 }
 
+model PickUpPhotoUpload {
+  id            String   @id @default(uuid()) @map("_id") @db.ObjectId
+  imageSrc      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  reservationId String   @db.ObjectId
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
+model DropOffPhotoUpload {
+  id            String   @id @default(uuid()) @map("_id") @db.ObjectId
+  imageSrc      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  reservationId String   @db.ObjectId
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+}
+
 model Reservation {
-  id                String @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String @db.ObjectId
-  vehicleId         String @db.ObjectId
-  carSharingId      String @db.ObjectId
+  id                String   @id @default(uuid()) @map("_id") @db.ObjectId
+  userId            String   @db.ObjectId
+  vehicleId         String   @db.ObjectId
+  carSharingId      String   @db.ObjectId
+  guestFirstName    String
+  guestMiddleInital String
+  guestLastName     String
+  guestEmail        String?
+  guestPhone        String?
+  guestIsVerified   Boolean
+  locationId        String   @db.ObjectId
   startDate         DateTime
   endDate           DateTime
-  totalPrice        Int
   createdAt         DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle            Vehicle            @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   carSharingPlatfrom CarSharingPlatform @relation(fields: [carSharingId], references: [id], onDelete: Cascade)
+  location           Location           @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  pickUpPhotos  PickUpPhotoUpload[]
+  dropOffPhotos DropOffPhotoUpload[]
+}
+
+enum Role {
+  ADMIN
+  STAFF
+  BASIC
 }
