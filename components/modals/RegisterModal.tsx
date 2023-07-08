@@ -8,7 +8,7 @@ import { useCallback, useState } from 'react';
 import { toast } from 'react-hot-toast';
 
 import { FieldValues } from 'react-hook-form/dist/types/fields';
-import { useForm } from 'react-hook-form/dist/useForm';
+import { useForm } from 'react-hook-form';
 import { SubmitHandler } from 'react-hook-form/dist/types/form';
 
 import useLoginModal from '@hooks/useLoginModal';
