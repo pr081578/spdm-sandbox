@@ -1,8 +1,10 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "../ERD.svg"
 }
 
 datasource db {
@@ -11,19 +13,18 @@ datasource db {
 }
 
 model User {
-  id             String    @id @default(uuid()) @map("_id") @db.ObjectId
+  id             String        @id @default(uuid()) @map("_id") @db.ObjectId
   name           String?
-  email          String?   @unique
+  email          String?       @unique
   emailVerified  DateTime?
-  role           Role      @default(BASIC)
   image          String?
   hashedPassword String?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-
-  accounts     Account[]
-  vehicles     Vehicle[]
-  reservations Reservation[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  role           Role          @default(BASIC)
+  accounts       Account[]
+  vehicles       Vehicle[]
+  reservations   Reservation[]
 }
 
 model Account {
@@ -39,44 +40,89 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
 
 model Subscription {
-  id         String   @id @default(uuid()) @map("_id") @db.ObjectId
+  id         String             @id @default(uuid()) @map("_id") @db.ObjectId
   startDate  DateTime
   endDate    DateTime
   totalPrice Int
-  createdAt  DateTime @default(now())
+  createdAt  DateTime           @default(now())
+  vehicles   Vehicle[]
+  steps      SubscriptionStep[]
+}
 
-  vehicles Vehicle[]
+model SubscriptionStep {
+  id             String                 @id @default(uuid()) @map("_id") @db.ObjectId
+  subscriptionId String                 @db.ObjectId
+  description    String
+  order          Int
+  status         StepStatus             @default(NOT_STARTED)
+  createdAt      DateTime               @default(now())
+  updatedAt      DateTime               @updatedAt
+  subscription   Subscription           @relation(fields: [subscriptionId], references: [id])
+  tasks          SubscriptionStepTask[]
+}
+
+model SubscriptionStepTask {
+  id                 String           @id @default(uuid()) @map("_id") @db.ObjectId
+  taskId             String           @unique @db.ObjectId
+  subscriptionStepId String           @db.ObjectId
+  description        String
+  status             TaskStatus       @default(NOT_STARTED)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  task               Task             @relation(fields: [taskId], references: [id])
+  subscriptionStep   SubscriptionStep @relation(fields: [subscriptionStepId], references: [id])
+}
+
+model ParkingSlot {
+  id                  String               @id @default(uuid()) @map("_id") @db.ObjectId
+  name                String
+  isAvailable         Boolean              @default(true)
+  locationId          String               @db.ObjectId
+  vehicleId           String               @unique @db.ObjectId
+  reservationId       String               @unique @db.ObjectId
+  vehicleHistory      ParkingSlotHistory[]
+  Location            Location?            @relation(fields: [locationId], references: [id])
+  assignedVehicle     Vehicle?             @relation("ParkingSlotVehicle", fields: [vehicleId], references: [id])
+  assignedReservation Reservation?         @relation("ParkingSlotReservation", fields: [reservationId], references: [id])
+}
+
+model ParkingSlotHistory {
+  id                  String       @id @default(uuid()) @map("_id") @db.ObjectId
+  parkingSlotId       String       @db.ObjectId
+  vehicleId           String       @db.ObjectId
+  reservationId       String?      @db.ObjectId
+  createdAt           DateTime     @default(now())
+  assignedVehicle     Vehicle      @relation(fields: [vehicleId], references: [id])
+  assignedReservation Reservation? @relation(fields: [reservationId], references: [id])
+  parkingSlot         ParkingSlot  @relation(fields: [parkingSlotId], references: [id])
 }
 
 model Location {
-  id          String @id @default(uuid()) @map("_id") @db.ObjectId
-  street1Name String
-  street2Name String
-  city        String
-  state       String
-  zipcode     String
-
-  reservations Reservation[]
+  id           String        @id @default(uuid()) @map("_id") @db.ObjectId
+  street1Name  String
+  street2Name  String
+  city         String
+  state        String
+  zipcode      String
+  parkingSlots ParkingSlot[]
 }
 
 model CarSharingPlatform {
-  id        String   @id @default(uuid()) @map("_id") @db.ObjectId
-  startDate DateTime
-  endDate   DateTime
-  createdAt DateTime @default(now())
-
+  id           String        @id @default(uuid()) @map("_id") @db.ObjectId
+  startDate    DateTime
+  endDate      DateTime
+  createdAt    DateTime      @default(now())
   reservations Reservation[]
 }
 
 model Vehicle {
-  id                  String   @id @default(uuid()) @map("_id") @db.ObjectId
+  id                  String               @id @default(uuid()) @map("_id") @db.ObjectId
   make                String
   model               String
   year                Int
@@ -84,64 +130,116 @@ model Vehicle {
   state_registation   String
   state_license_plate String
   imageSrc            String
-  createdAt           DateTime @default(now())
+  createdAt           DateTime             @default(now())
   category            String
-  userId              String   @db.ObjectId
-  subscriptionId      String   @db.ObjectId
+  userId              String               @db.ObjectId
+  subscriptionId      String               @db.ObjectId
   isActive            Boolean
+  parkingSlotHistory  ParkingSlotHistory[]
+  owner               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subscription        Subscription         @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  assignedParkingSlot ParkingSlot?         @relation("ParkingSlotVehicle")
+  reservations        Reservation[]
+}
 
-  owner        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subscription Subscription  @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  reservations Reservation[]
+model Task {
+  id                   String                @id @default(uuid()) @map("_id") @db.ObjectId
+  name                 String
+  description          String
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  subscriptionStepTask SubscriptionStepTask?
+  reservationStepTask  ReservationStep?      @relation(fields: [reservationStepId], references: [id])
+  reservationStepId    String?               @db.ObjectId
+  ReservationStepTask  ReservationStepTask?
 }
 
 model PickUpPhotoUpload {
-  id            String   @id @default(uuid()) @map("_id") @db.ObjectId
+  id            String      @id @default(uuid()) @map("_id") @db.ObjectId
   imageSrc      String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  reservationId String   @db.ObjectId
-
-  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  reservationId String      @db.ObjectId
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 }
 
 model DropOffPhotoUpload {
-  id            String   @id @default(uuid()) @map("_id") @db.ObjectId
+  id            String      @id @default(uuid()) @map("_id") @db.ObjectId
   imageSrc      String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  reservationId String   @db.ObjectId
-
-  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  reservationId String      @db.ObjectId
+  reservation   Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
 }
 
 model Reservation {
-  id                String   @id @default(uuid()) @map("_id") @db.ObjectId
-  userId            String   @db.ObjectId
-  vehicleId         String   @db.ObjectId
-  carSharingId      String   @db.ObjectId
-  guestFirstName    String
-  guestMiddleInital String
-  guestLastName     String
-  guestEmail        String?
-  guestPhone        String?
-  guestIsVerified   Boolean
-  locationId        String   @db.ObjectId
-  startDate         DateTime
-  endDate           DateTime
-  createdAt         DateTime @default(now())
+  id                  String               @id @default(uuid()) @map("_id") @db.ObjectId
+  userId              String               @db.ObjectId
+  vehicleId           String               @db.ObjectId
+  carSharingId        String               @db.ObjectId
+  guestFirstName      String
+  guestMiddleInital   String
+  guestLastName       String
+  guestEmail          String?
+  guestPhone          String?
+  guestIsVerified     Boolean
+  locationId          String               @db.ObjectId
+  checkInStatus       Boolean              @default(false)
+  checkOutStatus      Boolean              @default(false)
+  startDate           DateTime
+  endDate             DateTime
+  createdAt           DateTime             @default(now())
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle             Vehicle              @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  carSharingPlatfrom  CarSharingPlatform   @relation(fields: [carSharingId], references: [id], onDelete: Cascade)
+  assignedParkingSlot ParkingSlot?         @relation("ParkingSlotReservation")
+  pickUpPhotos        PickUpPhotoUpload[]
+  dropOffPhotos       DropOffPhotoUpload[]
+  parkingSlotHistory  ParkingSlotHistory[]
+  reservationSteps    ReservationStep[]
+}
 
-  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicle            Vehicle            @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  carSharingPlatfrom CarSharingPlatform @relation(fields: [carSharingId], references: [id], onDelete: Cascade)
-  location           Location           @relation(fields: [locationId], references: [id], onDelete: Cascade)
+model ReservationStep {
+  id            String                @id @default(uuid()) @map("_id") @db.ObjectId
+  reservationId String                @db.ObjectId
+  description   String
+  order         Int
+  status        StepStatus            @default(NOT_STARTED)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  reservation   Reservation           @relation(fields: [reservationId], references: [id])
+  tasks         ReservationStepTask[]
+  Task          Task[]
+}
 
-  pickUpPhotos  PickUpPhotoUpload[]
-  dropOffPhotos DropOffPhotoUpload[]
+model ReservationStepTask {
+  id                 String          @id @default(uuid()) @map("_id") @db.ObjectId
+  taskId             String          @unique @db.ObjectId
+  subscriptionStepId String          @db.ObjectId
+  description        String
+  status             TaskStatus      @default(NOT_STARTED)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  task               Task            @relation(fields: [taskId], references: [id])
+  reservationStep    ReservationStep @relation(fields: [subscriptionStepId], references: [id])
 }
 
 enum Role {
   ADMIN
   STAFF
   BASIC
+}
+
+enum TaskStatus {
+  NOT_STARTED
+  STARTED
+  PENDING
+  BLOCKED
+  COMPLETED
+}
+
+enum StepStatus {
+  NOT_STARTED
+  PENDING
+  COMPLETED
 }
