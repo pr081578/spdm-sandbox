@@ -27,6 +27,7 @@ export function middleware(request: NextRequest) {
     label = 'dashboard';
   }
   if (label) {
-    redis.lpush(label as string, logData);
+    //redis.lpush(label as string, logData);
   }
+  return NextResponse.next();
 }

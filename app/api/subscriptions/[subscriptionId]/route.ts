@@ -1,8 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
-  const body = await request.json();
-  const { props } = body;
+const name = 'Subscription';
+export async function POST(req: NextRequest) {
+  return NextResponse.json({ name: name, type: 'POST' }, { status: 200 });
+}
 
-  return NextResponse.json(props);
+export async function GET(req: NextRequest) {
+  return NextResponse.json(
+    {
+      name: name,
+      type: 'GET',
+      url: req.url,
+      id: Number(req.url.split('/')[5]),
+    },
+    { status: 200 }
+  );
 }
